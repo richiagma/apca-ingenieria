@@ -4,312 +4,375 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EJE5 - Dashboard de Compliance Laboral</title>
-    <!-- Tailwind CSS para el diseño ejecutivo -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js para las visualizaciones -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide para la iconografía -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Ajustes para integración en portales: Fondo sólido y altura completa */
+        html, body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #ffffff !important; 
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
         .navy-bg { background-color: #0f172a; }
         .risk-glow { box-shadow: 0 0 30px rgba(220, 38, 38, 0.4); }
+        
+        /* Scrollbar personalizada para la tabla de registros */
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* Estilo para el portal de acceso seguro */
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background-color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="text-slate-900">
 
-    <!-- Navegación Ejecutiva -->
-    <nav class="navy-bg text-white py-4 px-6 flex justify-between items-center shadow-2xl sticky top-0 z-50">
-        <div class="flex items-center gap-3">
-            <div class="bg-red-600 p-2 rounded-lg">
-                <i data-lucide="shield-alert" class="w-6 h-6 text-white"></i>
+    <!-- PORTAL DE ACCESO SEGURO -->
+    <div id="auth-overlay">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md mx-4 text-center">
+            <div class="bg-red-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <i data-lucide="lock" class="w-8 h-8 text-white"></i>
             </div>
-            <div>
-                <h1 class="text-xl font-bold tracking-tighter uppercase leading-none">EJE5 <span class="text-red-500 font-black italic">PROYECTOS</span></h1>
-                <p class="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-1">Auditoría de Pasivos Laborales Proyectados</p>
+            <h2 class="text-2xl font-bold text-slate-900 mb-2 tracking-tighter uppercase">Acceso Restringido</h2>
+            <p class="text-slate-500 text-sm mb-8 font-medium italic">Se requiere credencial para visualizar datos sensibles de EJE5.</p>
+            
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="password" id="passwordInput" placeholder="Ingrese la contraseña" 
+                        class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-red-500 transition-all text-center font-bold tracking-widest">
+                </div>
+                <button onclick="checkAccess()" 
+                    class="w-full bg-[#0f172a] hover:bg-slate-800 text-white font-black py-4 rounded-2xl transition-all shadow-xl uppercase tracking-widest text-xs">
+                    Validar Credencial
+                </button>
+                <p id="errorMessage" class="text-red-600 text-[10px] font-bold uppercase mt-2 hidden animate-bounce">Contraseña Incorrecta</p>
             </div>
-        </div>
-        <div class="hidden md:flex items-center gap-4 text-xs font-bold text-red-400">
-            <span class="animate-pulse">●</span> REPORTE CRÍTICO: 39 CONTRATOS VULNERABLES
-        </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-        
-        <!-- HERO SECTION: MONTO TOTAL EN RIESGO (15 MESES) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200 risk-glow">
-                <div class="p-8 md:p-12 flex-1">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase">Pasivo Contingente Total</span>
-                    </div>
-                    <h2 class="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Monto en Riesgo (39 Trabajadores Vulnerables)</h2>
-                    <div class="flex items-baseline gap-2">
-                        <span id="totalRiskValue" class="text-5xl md:text-7xl font-black text-red-600 tracking-tighter">$0</span>
-                        <span class="text-red-500 font-bold text-xl uppercase tracking-tighter">MXN</span>
-                    </div>
-                    <p class="mt-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-6">
-                        <span class="font-bold text-slate-900 block mb-2 underline decoration-red-400 underline-offset-4">Criterio de Riesgo Laboral:</span>
-                        Este cálculo proyecta el costo de 15 meses de salarios vencidos, indemnizaciones. La falta de justificación técnica en estos 39 expedientes anula la validez de la temporalidad.
-                    </p>
-                </div>
-                <div class="bg-[#7f1d1d] p-8 text-white flex flex-col justify-center items-center md:w-80 text-center relative overflow-hidden">
-                    <i data-lucide="gavel" class="w-40 h-40 absolute -bottom-10 -right-10 opacity-10 rotate-12"></i>
-                    <div class="relative z-10">
-                        <p class="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Exposición Legal</p>
-                        <p class="text-6xl font-black mb-2">98%</p>
-                        <p class="text-[10px] font-medium leading-tight opacity-80 text-balance italic">Probabilidad de derrota jurídica ante la ausencia de acreditación de la materia de trabajo.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-1 gap-4">
-                <div class="bg-white p-6 rounded-2xl shadow-md border-l-8 border-red-600 flex flex-col justify-center">
-                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">IRLCT Sin Justificación</p>
-                    <h3 class="text-4xl font-black text-slate-800">39 <span class="text-xs text-slate-400">Personas</span></h3>
-                    <p class="text-[10px] text-red-600 font-bold mt-2">Nulidad de contrato detectada</p>
-                </div>
-                <div class="bg-[#0f172a] p-6 rounded-2xl shadow-md border-l-8 border-blue-500 text-white flex flex-col justify-center">
-                    <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Carga de la Prueba</p>
-                    <h3 class="text-4xl font-black uppercase">Crítica</h3>
-                    <p class="text-[10px] text-slate-500 mt-2 font-bold italic">Patrón obligado a probar la temporalidad.</p>
-                </div>
+            <div class="mt-8 border-t border-slate-100 pt-6">
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Unidad de Compliance EJE5 © 2026</p>
             </div>
         </div>
+    </div>
 
-        <!-- VISUALIZACIONES ANALÍTICAS -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200">
-                <h3 class="text-lg font-bold mb-8 flex items-center gap-3">
-                    <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-600"></i>
-                    Composición: Riesgo vs. Blindaje
-                </h3>
-                <div style="height: 300px;">
-                    <canvas id="healthChart"></canvas>
+    <!-- CONTENIDO DEL DASHBOARD (OCULTO POR DEFECTO HASTA LA VALIDACIÓN) -->
+    <div id="dashboard-content" class="hidden">
+        <!-- Navegación Ejecutiva -->
+        <nav class="navy-bg text-white py-4 px-6 flex justify-between items-center shadow-xl sticky top-0 z-50">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-600 p-2 rounded-lg">
+                    <i data-lucide="shield-alert" class="w-6 h-6 text-white"></i>
                 </div>
-            </div>
-
-            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200">
-                <h3 class="text-lg font-bold mb-8 flex items-center gap-3">
-                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i>
-                    Riesgo por Área (Impacto Máximo)
-                </h3>
-                <div style="height: 300px;">
-                    <canvas id="areaChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- TABLA DETALLADA DE RIESGO -->
-        <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
-            <div class="p-6 md:p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i data-lucide="list-x" class="w-6 h-6 text-red-600"></i>
-                        Censo Detallado de Personal en Riesgo
-                    </h3>
-                    <p class="text-[11px] text-slate-500 mt-1 uppercase font-semibold tracking-wider">Análisis RFC por RFC de los 39 casos sin justificación.</p>
+                    <h1 class="text-xl font-bold tracking-tighter uppercase leading-none">EJE5 <span class="text-red-500 font-black italic">PROYECTOS</span></h1>
+                    <p class="text-[9px] text-slate-400 font-bold tracking-widest uppercase mt-1">Auditoría de Pasivos Laborales Proyectados</p>
                 </div>
             </div>
-            <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
-                <table class="w-full text-left border-collapse">
-                    <thead class="sticky top-0 bg-slate-50 z-10">
-                        <tr class="text-[10px] uppercase tracking-widest font-black text-slate-500 border-b border-slate-200">
-                            <th class="px-6 py-4">RFC / Documento</th>
-                            <th class="px-6 py-4">Cargo y Sub-área</th>
-                            <th class="px-6 py-4">Justificación</th>
-                            <th class="px-6 py-4 text-center">Sueldo Base</th>
-                            <th class="px-6 py-4 text-right text-red-600 font-black">Pasivo Contingente</th>
-                        </tr>
-                    </thead>
-                    <tbody id="workersTableBody" class="text-xs">
-                        <!-- Poblado por JS -->
-                    </tbody>
-                </table>
+            <div class="hidden md:flex items-center gap-4 text-xs font-bold text-red-400 uppercase tracking-widest">
+                <span class="animate-pulse">●</span> Riesgo Laboral Crítico Detectado
             </div>
-            <div class="p-6 bg-red-50 border-t border-red-100">
-                <p class="text-[11px] text-red-800 leading-relaxed font-bold italic">
-                </p>
-            </div>
-        </div>
+        </nav>
 
-        <!-- SECCIÓN DE ACCIÓN PREVENTIVA -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200">
-                <h3 class="text-lg font-bold mb-6 flex items-center gap-3 text-red-800">
-                    <i data-lucide="search" class="w-5 h-5"></i>
-                    Diagnóstico de Vulnerabilidad
-                </h3>
-                <div class="space-y-4">
-                    <div class="p-5 rounded-2xl bg-red-50 border border-red-100 flex gap-4">
-                        <i data-lucide="alert-triangle" class="text-red-600 w-6 h-6 flex-shrink-0"></i>
-                        <div>
-                            <p class="font-black text-red-900 text-sm mb-1 uppercase">Simulación de Temporalidad</p>
-                            <p class="text-xs text-red-700 leading-relaxed italic">Se detectó que el 100% de los operadores en Producción carecen de justificación técnica en sus contratos temporales.</p>
+        <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+            
+            <!-- SECCIÓN DE IMPACTO FINANCIERO -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200 risk-glow">
+                    <div class="p-8 md:p-12 flex-1">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">Impacto Financiero Máximo</span>
+                        </div>
+                        <h2 class="text-slate-500 font-bold text-xs uppercase tracking-widest mb-2">Monto en Riesgo (39 Trabajadores Críticos)</h2>
+                        <div class="flex items-baseline gap-2">
+                            <span id="totalRiskValue" class="text-5xl md:text-7xl font-black text-red-600 tracking-tighter">$0</span>
+                            <span class="text-red-500 font-bold text-xl uppercase tracking-tighter">MXN</span>
+                        </div>
+                        <p class="mt-6 text-slate-600 text-sm leading-relaxed border-t border-slate-100 pt-6">
+                            <span class="font-bold text-slate-900 block mb-2 underline decoration-red-400 underline-offset-4">Lógica de Contingencia:</span>
+                            Proyección basada en el costo de **15 meses** de salarios vencidos, honorarios e indemnización, con factor **x2** por carga de la prueba. La ausencia de justificación técnica en estos 39 expedientes anula la temporalidad ante tribunales.
+                        </p>
+                    </div>
+                    <div class="bg-[#7f1d1d] p-8 text-white flex flex-col justify-center items-center md:w-80 text-center relative overflow-hidden">
+                        <i data-lucide="gavel" class="w-40 h-40 absolute -bottom-10 -right-10 opacity-10 rotate-12"></i>
+                        <div class="relative z-10">
+                            <p class="text-xs font-bold uppercase tracking-widest opacity-70 mb-2">Probabilidad de Derrota</p>
+                            <p class="text-6xl font-black mb-2">98%</p>
+                            <p class="text-[10px] font-medium leading-tight opacity-80 text-balance italic">Falta de acreditación de la materia de trabajo según Art. 37 LFT.</p>
                         </div>
                     </div>
-                    <div class="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex gap-4">
-                        <i data-lucide="file-x" class="text-amber-600 w-6 h-6 flex-shrink-0"></i>
-                        <div>
-                            <p class="font-black text-amber-900 text-sm mb-1 uppercase">Nulidad del Objeto</p>
-                            <p class="text-xs text-amber-700 leading-relaxed italic">Al no existir justificación, el contrato es nulo ante cualquier tribunal, convirtiéndolo automáticamente en indeterminado.</p>
-                        </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-md border-l-8 border-red-600 flex flex-col justify-center">
+                        <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">IRLCT Sin Justificación</p>
+                        <h3 class="text-4xl font-black text-slate-800">39 <span class="text-xs text-slate-400 uppercase font-bold">Casos</span></h3>
+                        <p class="text-[10px] text-red-600 font-bold mt-2 font-mono italic">Simulación de temporalidad</p>
                     </div>
+                    <div class="bg-[#0f172a] p-6 rounded-2xl shadow-md border-l-8 border-blue-500 text-white flex flex-col justify-center">
+                        <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest">Carga Probatoria</p>
+                        <h3 class="text-4xl font-black uppercase">Crítica</h3>
+                        <p class="text-[10px] text-slate-500 mt-2 font-bold italic tracking-wide">El patrón debe probar la temporalidad.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISUALIZACIONES -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200">
+                    <h3 class="text-lg font-bold mb-8 flex items-center gap-3">
+                        <i data-lucide="pie-chart" class="w-5 h-5 text-indigo-600"></i>
+                        Salud de la Plantilla Total (54)
+                    </h3>
+                    <div style="height: 300px;">
+                        <canvas id="healthChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200">
+                    <h3 class="text-lg font-bold mb-8 flex items-center gap-3">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i>
+                        Pasivo Proyectado por Sub-área
+                    </h3>
+                    <div style="height: 300px;">
+                        <canvas id="areaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA DE LOS 39 REGISTROS -->
+            <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+                <div class="p-6 md:p-8 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <i data-lucide="list-x" class="w-6 h-6 text-red-600"></i>
+                            Detalle de Personal en Riesgo Crítico
+                        </h3>
+                        <p class="text-[11px] text-slate-500 mt-1 uppercase font-semibold tracking-wider italic">Identificación RFC de los trabajadores con Justificación = NO.</p>
+                    </div>
+                    <div class="bg-red-50 text-red-600 px-3 py-1 rounded-full text-[10px] font-black">
+                        39 REGISTROS AUDITADOS
+                    </div>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar max-h-[700px]">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-slate-50 z-10 shadow-sm">
+                            <tr class="text-[10px] uppercase tracking-widest font-black text-slate-500 border-b border-slate-200">
+                                <th class="px-6 py-4">Ficha / RFC</th>
+                                <th class="px-6 py-4">Cargo / Sub-área</th>
+                                <th class="px-6 py-4">Justificación</th>
+                                <th class="px-6 py-4 text-center">Sueldo Base</th>
+                                <th class="px-6 py-4 text-right text-red-600 font-black">Pasivo Contingente</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workersTableBody" class="text-xs">
+                            <!-- Poblado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-6 bg-red-50 border-t border-red-100">
+                    <p class="text-[11px] text-red-800 leading-relaxed font-bold italic italic">
+                        * El pasivo se calcula como: (Sueldo x 2 x 15). Cualquier término de contrato se interpreta como despido injustificado ante la falta de causa técnica.
+                    </p>
                 </div>
             </div>
 
             <!-- PLAN ESTRATÉGICO -->
-            <div class="bg-[#0f172a] p-10 rounded-3xl shadow-2xl text-white relative overflow-hidden">
-                <div class="relative z-10">
-                    <h3 class="text-xl font-bold mb-8 flex items-center gap-3">
-                        <i data-lucide="shield-check" class="w-6 h-6 text-indigo-400"></i>
-                        Estrategia de Compliance Laboral
-                    </h3>
-                    <div class="space-y-6">
-                        <div class="flex gap-4">
-                            <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs flex-shrink-0">01</div>
-                            <p class="text-xs text-slate-400 italic leading-relaxed"><span class="text-white font-bold block mb-1">Regularización Contractual</span> Generar nuevos contratos por tiempo determinado que justifiquen temporalidad con criterio legal y jurisprudencial.</p>
+            <div class="bg-[#0f172a] p-10 rounded-3xl shadow-2xl text-white relative overflow-hidden mb-12">
+                <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-8 flex items-center gap-3 text-indigo-400">
+                            <i data-lucide="zap" class="w-8 h-8"></i>
+                            Estrategia de Remediación
+                        </h3>
+                        <div class="space-y-6">
+                            <div class="flex gap-4 group">
+                                <div class="w-10 h-10 bg-indigo-600 group-hover:bg-indigo-500 transition-colors flex-shrink-0 rounded-full flex items-center justify-center font-bold text-xs">01</div>
+                                <p class="text-xs text-slate-400 italic leading-relaxed"><span class="text-white font-bold block mb-1">Regularización Masiva</span> Migrar a los 39 trabajadores a contratos Indeterminados mediante un convenio de reconocimiento de antigüedad.</p>
+                            </div>
+                            <div class="flex gap-4 group">
+                                <div class="w-10 h-10 bg-indigo-600 group-hover:bg-indigo-500 transition-colors flex-shrink-0 rounded-full flex items-center justify-center font-bold text-xs">02</div>
+                                <p class="text-xs text-slate-400 italic leading-relaxed"><span class="text-white font-bold block mb-1">Blindaje Probatorio</span> Digitalizar el control de asistencia y asegurar el acuse de recibo de nómina (CFDI) firmado.</p>
+                            </div>
                         </div>
-
+                    </div>
+                    <div class="flex flex-col justify-center items-center border-t md:border-t-0 md:border-l border-slate-700 pt-8 md:pt-0 md:pl-8">
+                        <p class="text-[10px] uppercase font-bold text-indigo-300 mb-4 tracking-widest text-center">Protocolo de Emergencia</p>
+                        <button class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl transition-all shadow-xl uppercase tracking-widest text-xs">
+                            Ejecutar Plan de Blindaje 2026
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Inicializar iconos
-        lucide.createIcons();
+        // Configuración de Seguridad
+        const ACCESS_PASSWORD = "EJE5-2026";
 
-        // DATOS REALES DE LOS 39 TRABAJADORES SIN JUSTIFICACIÓN (Analizado del CSV)
-        const staffAtRisk = [
-            { id: "GACJ9608306P1", cargo: "Comprador", area: "Compras", salary: 4740 },
-            { id: "CAMJ980706RH8", cargo: "Diseñador Industrial", area: "Ingeniería", salary: 4740 },
-            { id: "CUHO911006UT5", cargo: "Operador CM", area: "Producción", salary: 8000 },
-            { id: "JIGJ650128DT8", cargo: "Operador CM", area: "Producción", salary: 4740 },
-            { id: "TOVE0012093N6", cargo: "Diseñador Industrial", area: "Ingeniería", salary: 10000 },
-            { id: "ROOJ000217G50", cargo: "Operador CM", area: "Producción", salary: 7000 },
-            { id: "SAMA000912732", cargo: "Auditor Procesos", area: "Calidad", salary: 6500 },
-            { id: "MAPN800910DE2", cargo: "Ayudante General", area: "Almacén", salary: 6500 },
-            { id: "HECN960826MW6", cargo: "Técnico Metrólogo", area: "Calidad", salary: 8320 },
-            { id: "MOGA981028DC3", cargo: "Operador CM", area: "Producción", salary: 7500 },
-            { id: "CALG950328HU7", cargo: "Operador CM", area: "Producción", salary: 8500 },
-            { id: "MIVR000504P23", cargo: "Operador CM", area: "Producción", salary: 7500 },
-            { id: "HICY931229QPA", cargo: "Auxiliar Almacén", area: "Logística", salary: 7500 },
-            { id: "AAAJ990430D51", cargo: "Programador CAM", area: "Ingeniería", salary: 9000 },
-            { id: "REAJ840710M58", cargo: "Montacarguista", area: "Logística", salary: 7500 },
-            { id: "BECE981024UP7", cargo: "Operador CM", area: "Producción", salary: 7650 },
-            { id: "RUVE850901SJ6", cargo: "Comprador", area: "Compras", salary: 6000 },
-            { id: "ROHJ9904079J9", cargo: "Operador CM", area: "Producción", salary: 7500 },
-            { id: "REFE9809097C5", cargo: "Operador CM", area: "Producción", salary: 4740 },
-            { id: "SAGJ011113D73", cargo: "Operador CM", area: "Producción", salary: 8750 },
-            { id: "TOEE840224GX1", cargo: "Auditor Calidad", area: "Calidad", salary: 8750 },
-            { id: "ROHJ0009085Z7", cargo: "Técnico Proyectos", area: "Ingeniería", salary: 8000 },
-            { id: "DIJA911010HG2", cargo: "Auxiliar Calidad", area: "Calidad", salary: 4740 },
-            { id: "BUSM890531HHA", cargo: "Operador CM", area: "Producción", salary: 8000 },
-            { id: "EUGA011220TK4", cargo: "Operador CM", area: "Producción", salary: 7500 },
-            { id: "LUFF940202IAA", cargo: "Auxiliar Almacén", area: "Almacén", salary: 6000 },
-            { id: "SIRE9812015Z2", cargo: "Ayudante General", area: "Almacén", salary: 6750 },
-            { id: "ZAAE001128UE9", cargo: "Operador CM", area: "Producción", salary: 8750 },
-            { id: "MISM991119I90", cargo: "Programador", area: "Ingeniería", salary: 4740 },
-            { id: "GACJ9608306P1-B", cargo: "Comprador SR", area: "Compras", salary: 9000 },
-            { id: "CAMJ980706RH8-B", cargo: "Ingeniero", area: "Ingeniería", salary: 8500 },
-            { id: "VIFA010429HC6", cargo: "Operador CM", area: "Producción", salary: 7500 },
-            { id: "EORD071113XXX", cargo: "Auxiliar Calidad", area: "Calidad", salary: 7500 },
-            { id: "HEGO9209126G5", cargo: "Operador CM", area: "Producción", salary: 8750 },
-            { id: "AACM761001NJ5", cargo: "Operador CM", area: "Producción", salary: 4740 },
-            { id: "PERH830914MT6", cargo: "Técnico Metrólogo", area: "Calidad", salary: 8240 },
-            { id: "VAAA950705DW0-B", cargo: "Operador CM", area: "Producción", salary: 11250 },
-            { id: "SASA720209TU4", cargo: "Operador CM", area: "Producción", salary: 7500 },
-            { id: "COGU770516F52", cargo: "Operador CM", area: "Producción", salary: 4740 }
-        ];
+        function checkAccess() {
+            const input = document.getElementById('passwordInput').value;
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (input === ACCESS_PASSWORD) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                document.getElementById('dashboard-content').classList.remove('hidden');
+                // Inicializar visualizaciones solo tras el acceso exitoso
+                initDashboard();
+            } else {
+                errorMsg.classList.remove('hidden');
+                setTimeout(() => errorMsg.classList.add('hidden'), 2000);
+            }
+        }
 
-        // Lógica de Negocio: Fórmula de Contingencia
-        const multiplier = 30; // 2 (Carga de la Prueba) x 15 (Meses Juicio)
-        let totalRisk = 0;
-        const areaRisks = {};
-        const tableBody = document.getElementById('workersTableBody');
-        const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 });
-
-        staffAtRisk.forEach(worker => {
-            const riskValue = worker.salary * multiplier;
-            totalRisk += riskValue;
-            areaRisks[worker.area] = (areaRisks[worker.area] || 0) + riskValue;
-
-            // Fila de Tabla
-            const row = document.createElement('tr');
-            row.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
-            row.innerHTML = `
-                <td class="px-6 py-4 font-mono font-bold text-slate-500">${worker.id}</td>
-                <td class="px-6 py-4">
-                    <div class="font-bold text-slate-800">${worker.cargo}</div>
-                    <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${worker.area}</div>
-                </td>
-                <td class="px-6 py-4">
-                    <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-md font-black text-[9px]">
-                        <i data-lucide="x-circle" class="w-3 h-3"></i> NO JUSTIFICADA
-                    </span>
-                </td>
-                <td class="px-6 py-4 text-center font-medium">${fmt.format(worker.salary)}</td>
-                <td class="px-6 py-4 text-right font-black text-red-600">${fmt.format(riskValue)}</td>
-            `;
-            tableBody.appendChild(row);
+        // Permitir entrada con la tecla 'Enter'
+        document.getElementById('passwordInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') checkAccess();
         });
 
-        // Actualizar KPIs Globales
-        document.getElementById('totalRiskValue').textContent = fmt.format(totalRisk);
+        function initDashboard() {
+            lucide.createIcons();
+            
+            // Datos reales procesados del archivo trabajos.csv (Justificación = NO)
+            const staffAtRisk = [
+                { id: "GACJ9608306P1", cargo: "Comprador", area: "Compras", salary: 4740 },
+                { id: "CAMJ980706RH8", cargo: "Diseñador Industrial", area: "Ingeniería", salary: 4740 },
+                { id: "CUHO911006UT5", cargo: "Operador CM", area: "Producción", salary: 8000 },
+                { id: "JIGJ650128DT8", cargo: "Operador CM", area: "Producción", salary: 4740 },
+                { id: "TOVE0012093N6", cargo: "Diseñador Industrial", area: "Ingeniería", salary: 10000 },
+                { id: "ROOJ000217G50", cargo: "Operador CM", area: "Producción", salary: 7000 },
+                { id: "SAMA000912732", cargo: "Auditor Procesos", area: "Calidad", salary: 6500 },
+                { id: "MAPN800910DE2", cargo: "Ayudante General", area: "Almacén", salary: 6500 },
+                { id: "HECN960826MW6", cargo: "Técnico Metrólogo", area: "Calidad", salary: 8320 },
+                { id: "MOGA981028DC3", cargo: "Operador CM", area: "Producción", salary: 7500 },
+                { id: "CALG950328HU7", cargo: "Operador CM", area: "Producción", salary: 8500 },
+                { id: "MIVR000504P23", cargo: "Operador CM", area: "Producción", salary: 7500 },
+                { id: "HICY931229QPA", cargo: "Auxiliar Almacén", area: "Logística", salary: 7500 },
+                { id: "AAAJ990430D51", cargo: "Programador CAM", area: "Ingeniería", salary: 9000 },
+                { id: "REAJ840710M58", cargo: "Montacarguista", area: "Logística", salary: 7500 },
+                { id: "BECE981024UP7", cargo: "Operador CM", area: "Producción", salary: 7650 },
+                { id: "RUVE850901SJ6", cargo: "Comprador", area: "Compras", salary: 6000 },
+                { id: "ROHJ9904079J9", cargo: "Operador CM", area: "Producción", salary: 7500 },
+                { id: "REFE9809097C5", cargo: "Operador CM", area: "Producción", salary: 4740 },
+                { id: "SAGJ011113D73", cargo: "Operador CM", area: "Producción", salary: 8750 },
+                { id: "TOEE840224GX1", cargo: "Auditor Calidad", area: "Calidad", salary: 8750 },
+                { id: "ROHJ0009085Z7", cargo: "Técnico Proyectos", area: "Ingeniería", salary: 8000 },
+                { id: "DIJA911010HG2", cargo: "Auxiliar Calidad", area: "Calidad", salary: 4740 },
+                { id: "BUSM890531HHA", cargo: "Operador CM", area: "Producción", salary: 8000 },
+                { id: "EUGA011220TK4", cargo: "Operador CM", area: "Producción", salary: 7500 },
+                { id: "LUFF940202IAA", cargo: "Auxiliar Almacén", area: "Almacén", salary: 6000 },
+                { id: "SIRE9812015Z2", cargo: "Ayudante General", area: "Almacén", salary: 6750 },
+                { id: "ZAAE001128UE9", cargo: "Operador CM", area: "Producción", salary: 8750 },
+                { id: "MISM991119I90", cargo: "Programador", area: "Ingeniería", salary: 4740 },
+                { id: "GACJ9608306P1-B", cargo: "Comprador SR", area: "Compras", salary: 9000 },
+                { id: "CAMJ980706RH8-B", cargo: "Ingeniero", area: "Ingeniería", salary: 8500 },
+                { id: "VIFA010429HC6", cargo: "Operador CM", area: "Producción", salary: 7500 },
+                { id: "EORD071113XXX", cargo: "Auxiliar Calidad", area: "Calidad", salary: 7500 },
+                { id: "HEGO9209126G5", cargo: "Operador CM", area: "Producción", salary: 8750 },
+                { id: "AACM761001NJ5", cargo: "Operador CM", area: "Producción", salary: 4740 },
+                { id: "PERH830914MT6", cargo: "Técnico Metrólogo", area: "Calidad", salary: 8240 },
+                { id: "VAAA950705DW0-B", cargo: "Operador CM", area: "Producción", salary: 11250 },
+                { id: "SASA720209TU4", cargo: "Operador CM", area: "Producción", salary: 7500 },
+                { id: "COGU770516F52", cargo: "Operador CM", area: "Producción", salary: 4740 }
+            ];
 
-        // Actualizar Iconos de la Tabla
-        lucide.createIcons();
+            const multiplier = 30; // 2 x 15 meses
+            let totalRisk = 0;
+            const areaRisks = {};
+            const tableBody = document.getElementById('workersTableBody');
+            const fmt = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 });
 
-        // Gráfico Circular: Salud Contractual
-        const totalEmployees = 54;
-        new Chart(document.getElementById('healthChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Vulnerable (39)', 'Blindado / Indeterminado (15)'],
-                datasets: [{
-                    data: [39, 15],
-                    backgroundColor: ['#dc2626', '#0f172a'],
-                    borderWidth: 0,
-                    hoverOffset: 20
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, font: { size: 10, weight: 'bold' } }
-                    }
+            staffAtRisk.forEach(w => {
+                const riskValue = w.salary * multiplier;
+                totalRisk += riskValue;
+                areaRisks[w.area] = (areaRisks[w.area] || 0) + riskValue;
+
+                const row = document.createElement('tr');
+                row.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+                row.innerHTML = `
+                    <td class="px-6 py-4 font-mono font-bold text-slate-500">${w.id}</td>
+                    <td class="px-6 py-4">
+                        <div class="font-bold text-slate-800">${w.cargo}</div>
+                        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${w.area}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-md font-black text-[9px]">
+                            <i data-lucide="x-circle" class="w-3 h-3"></i> NO JUSTIFICADA
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center font-medium">${fmt.format(w.salary)}</td>
+                    <td class="px-6 py-4 text-right font-black text-red-600">${fmt.format(riskValue)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            document.getElementById('totalRiskValue').textContent = fmt.format(totalRisk);
+            lucide.createIcons();
+
+            // Gráfico Circular: Salud Contractual
+            const totalEmployees = 54;
+            new Chart(document.getElementById('healthChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Riesgo Crítico (39)', 'Blindado / Indeterminados (15)'],
+                    datasets: [{
+                        data: [39, 15],
+                        backgroundColor: ['#dc2626', '#0f172a'],
+                        borderWidth: 0,
+                        hoverOffset: 20
+                    }]
                 },
-                cutout: '80%'
-            }
-        });
-
-        // Gráfico de Barras: Riesgo por Área
-        new Chart(document.getElementById('areaChart'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(areaRisks),
-                datasets: [{
-                    label: 'Pasivo en Riesgo ($)',
-                    data: Object.values(areaRisks),
-                    backgroundColor: '#1e3a8a',
-                    borderRadius: 12,
-                    barThickness: 25
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } },
-                    y: { grid: { display: false } }
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, font: { size: 10, weight: 'bold' } }
+                        }
+                    },
+                    cutout: '80%'
                 }
-            }
-        });
+            });
+
+            // Gráfico de Barras: Riesgo por Áreas
+            new Chart(document.getElementById('areaChart'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(areaRisks),
+                    datasets: [{
+                        label: 'Pasivo en Riesgo ($)',
+                        data: Object.values(areaRisks),
+                        backgroundColor: '#1e3a8a',
+                        borderRadius: 12,
+                        barThickness: 25
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
